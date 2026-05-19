@@ -1,0 +1,65 @@
+name: Build and Release Rootfs
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-rootfs:
+    name: Build rootfs packages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build rootfs for ${{ matrix.arch }}
+        run: |
+          chmod +x scripts/create-rootfs-docker.sh
+          ./scripts/create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
+
+      - name: Upload rootfs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-${{ matrix.arch }}
+          path: rootfs-${{ matrix.arch }}.tar.gz
+
+  release:
+    name: Create GitHub Release
+    needs: build-rootfs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all rootfs artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: rootfs
+
+      - name: List downloaded files
+        run: ls -la rootfs/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.inputs.version }}
+          name: "Rootfs Release ${{ github.inputs.version }}"
+          body: |
+            Pre-built rootfs packages for Termux Clone.
+            Download the appropriate rootfs-{arch}.tar.gz for your device architecture.
+          files: |
+            rootfs/rootfs-arm64/rootfs-arm64.tar.gz
+            rootfs/rootfs-x86_64/rootfs-x86_64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
