@@ -64,14 +64,42 @@ jobs:
           echo "$GH_TOKEN" | gh auth login --with-token
           gh auth status
 
-      - name: Debug token and create release
+      - name: Create Release and Upload Assets
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          echo "Token starts with: ${GH_TOKEN:0:10}"
-          gh auth status
-          gh release create ${{ github.event.inputs.version }} \
-            --title "Rootfs Release ${{ github.event.inputs.version }}" \
-            --notes "Pre-built rootfs packages for Termux Clone" \
-            rootfs/rootfs-arm64/rootfs-arm64.tar.gz \
-            rootfs/rootfs-x86_64/rootfs-x86_64.tar.gz
+          REPO="${{ github.repository }}"
+          
+          # Create release
+          RELEASE_JSON=$(curl -s -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d '{"tag_name":"'"$VERSION"'" ,"name":"Rootfs Release '"$VERSION"'","body":"Pre-built rootfs packages for Termux Clone"}' \
+            "https://api.github.com/repos/$REPO/releases")
+          
+          echo "Release response: $RELEASE_JSON"
+          
+          UPLOAD_URL=$(echo "$RELEASE_JSON" | jq -r '.upload_url' 2>/dev/null)
+          echo "Upload URL: $UPLOAD_URL"
+          
+          if [ "$UPLOAD_URL" != "null" ]; then
+            # Upload arm64
+            curl -s -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Content-Type: application/gzip" \
+              --data-binary @rootfs/rootfs-arm64/rootfs-arm64.tar.gz \
+              "${UPLOAD_URL/\{name\}/rootfs-arm64.tar.gz}"
+            
+            # Upload x86_64
+            curl -s -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Content-Type: application/gzip" \
+              --data-binary @rootfs/rootfs-x86_64/rootfs-x86_64.tar.gz \
+              "${UPLOAD_URL/\{name\}/rootfs-x86_64.tar.gz}"
+            
+            echo "Assets uploaded successfully!"
+          else
+            echo "Failed to get upload URL"
+          fi
