@@ -26,8 +26,9 @@ jobs:
 
       - name: Build rootfs for ${{ matrix.arch }}
         run: |
+          ls -la scripts/
           chmod +x scripts/create-rootfs-docker.sh
-          ./scripts/create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
+          bash scripts/create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
 
       - name: Upload rootfs artifact
         uses: actions/upload-artifact@v4
@@ -53,8 +54,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.inputs.version }}
-          name: "Rootfs Release ${{ github.inputs.version }}"
+          tag_name: ${{ github.event.inputs.version }}
+          name: "Rootfs Release ${{ github.event.inputs.version }}"
           body: |
             Pre-built rootfs packages for Termux Clone.
             Download the appropriate rootfs-{arch}.tar.gz for your device architecture.
