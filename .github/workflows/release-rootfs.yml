@@ -48,6 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
+
       - name: Download all rootfs artifacts
         uses: actions/download-artifact@v4
         with:
@@ -56,16 +59,12 @@ jobs:
       - name: List downloaded files
         run: ls -la rootfs/
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          name: "Rootfs Release ${{ github.event.inputs.version }}"
-          body: |
-            Pre-built rootfs packages for Termux Clone.
-            Download the appropriate rootfs-{arch}.tar.gz for your device architecture.
-          files: |
-            rootfs/rootfs-arm64/rootfs-arm64.tar.gz
-            rootfs/rootfs-x86_64/rootfs-x86_64.tar.gz
+      - name: Create Release with GitHub CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ github.event.inputs.version }} \
+            --title "Rootfs Release ${{ github.event.inputs.version }}" \
+            --notes "Pre-built rootfs packages for Termux Clone" \
+            rootfs/rootfs-arm64/rootfs-arm64.tar.gz \
+            rootfs/rootfs-x86_64/rootfs-x86_64.tar.gz
