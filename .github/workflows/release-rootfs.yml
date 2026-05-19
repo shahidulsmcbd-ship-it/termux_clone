@@ -26,7 +26,10 @@ jobs:
 
       - name: Build rootfs for ${{ matrix.arch }}
         run: |
+          pwd
+          ls -la
           ls -la scripts/
+          file scripts/create-rootfs-docker.sh
           chmod +x scripts/create-rootfs-docker.sh
           bash scripts/create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
 
