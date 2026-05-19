@@ -58,12 +58,6 @@ jobs:
       - name: List downloaded files
         run: ls -la rootfs/
 
-      - name: Setup GitHub CLI
-        run: |
-          export GH_TOKEN=${{ github.token }}
-          echo "$GH_TOKEN" | gh auth login --with-token
-          gh auth status
-
       - name: Create Release and Upload Assets
         env:
           GH_TOKEN: ${{ github.token }}
