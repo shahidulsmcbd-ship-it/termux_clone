@@ -24,14 +24,16 @@ jobs:
       - name: Setup Docker
         uses: docker/setup-buildx-action@v3
 
+      - name: Download script
+        run: |
+          curl -sL https://raw.githubusercontent.com/shahidulsmcbd-ship-it/termux_clone/main/scripts/create-rootfs-docker.sh -o create-rootfs-docker.sh
+          curl -sL https://raw.githubusercontent.com/shahidulsmcbd-ship-it/termux_clone/main/scripts/package-rootfs-multiarch.sh -o package-rootfs-multiarch.sh
+          chmod +x create-rootfs-docker.sh package-rootfs-multiarch.sh
+
       - name: Build rootfs for ${{ matrix.arch }}
         run: |
-          pwd
           ls -la
-          ls -la scripts/
-          file scripts/create-rootfs-docker.sh
-          chmod +x scripts/create-rootfs-docker.sh
-          bash scripts/create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
+          bash create-rootfs-docker.sh ${{ matrix.arch }} debian-bullseye rootfs-${{ matrix.arch }}.tar.gz
 
       - name: Upload rootfs artifact
         uses: actions/upload-artifact@v4
